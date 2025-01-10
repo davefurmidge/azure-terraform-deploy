@@ -71,8 +71,8 @@ jobs:
         with:
           add_github_comment: changes-only
           path: ${{ env.TERRAFORM_BASE_PATH }}
-          variables: |
-            environment_name = "dev"
+          # variables: |
+          #   environment_name = "dev"
           var_file: ${{ env.VAR_BASE_PATH }}/non-production/infra.tfvars
         #   backend_config: use_oidc=true,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
           backend_config: use_oidc=false,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}

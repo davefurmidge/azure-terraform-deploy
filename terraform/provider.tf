@@ -6,6 +6,9 @@ terraform {
       source  = "hashicorp/azurerm"
       version = ">= 3.7.0"
     }
-
   }
+}
+
+provider "azurerm" {
+  features {}  # Required by the azurerm provider
 }

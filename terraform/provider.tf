@@ -10,5 +10,5 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}  # Required by the azurerm provider
+  features {} # Required by the azurerm provider
 }

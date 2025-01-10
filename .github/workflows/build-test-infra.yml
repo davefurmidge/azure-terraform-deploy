@@ -47,7 +47,7 @@ jobs:
           path: ${{ env.TERRAFORM_BASE_PATH }}
        
   plan-dev:
-    if: ${{ github.event_name == 'pull_request' }}
+    # if: ${{ github.event_name == 'pull_request' }}
     needs: ["lint"]
     runs-on: ubuntu-latest
     name: Plan Dev

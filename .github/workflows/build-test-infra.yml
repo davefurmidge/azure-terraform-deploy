@@ -71,8 +71,6 @@ jobs:
         with:
           add_github_comment: changes-only
           path: ${{ env.TERRAFORM_BASE_PATH }}
-          # variables: |
-          #   environment_name = "dev"
           var_file: ${{ env.VAR_BASE_PATH }}/non-production/infra.tfvars
         #   backend_config: use_oidc=true,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
           backend_config: use_oidc=false,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
@@ -108,36 +106,34 @@ jobs:
   #           backend_config: use_oidc=false,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
   #           # backend_config: use_oidc=true,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}  
 
-  # apply-dev:
-  #   if: ${{ github.event_name == 'push' }}
-  #   needs: ["lint"]
-  #   runs-on: ubuntu-latest
-  #   name: Apply Dev
-  #   environment:
-  #       name: dev
-  #   env:
-  #       GITHUB_TOKEN: ${{ secrets.SAML_GITHUB_TOKEN }}
-  #       ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
-  #       ARM_CLIENT_ID: ${{ secrets.SP_CLIENT_ID }}
-  #       ARM_CLIENT_SECRET: ${{ secrets.SP_PASSWORD }}
-  #       ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+  apply-dev:
+    if: ${{ github.event_name == 'push' }}
+    needs: ["lint"]
+    runs-on: ubuntu-latest
+    name: Apply Dev
+    environment:
+        name: dev
+    env:
+        GITHUB_TOKEN: ${{ secrets.SAML_GITHUB_TOKEN }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+        ARM_CLIENT_ID: ${{ secrets.SP_CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.SP_PASSWORD }}
+        ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
  
-  #     - name: terraform apply
-  #       uses: dflook/terraform-apply@v1.45.0
-  #       env:
-  #           TERRAFORM_HTTP_CREDENTIALS: github.com/davefurmidge=foo:${{ secrets.SAML_GITHUB_TOKEN }}
-  #       with:
-  #           auto_approve: true
-  #           path: ${{ env.TERRAFORM_BASE_PATH }}
-  #           variables: |
-  #               environment_name = "dev"
-  #           var_file: ${{ env.VAR_BASE_PATH }}/vars/non-production/infra.tfvars
-  #           # backend_config: use_oidc=true,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
-  #           backend_config: use_oidc=false,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
+      - name: terraform apply
+        uses: dflook/terraform-apply@v1.45.0
+        env:
+            TERRAFORM_HTTP_CREDENTIALS: github.com/davefurmidge=foo:${{ secrets.SAML_GITHUB_TOKEN }}
+        with:
+            auto_approve: true
+            path: ${{ env.TERRAFORM_BASE_PATH }}
+            var_file: ${{ env.VAR_BASE_PATH }}/vars/non-production/infra.tfvars
+            # backend_config: use_oidc=true,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
+            backend_config: use_oidc=false,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
 
   # apply-prod:
   #   if: ${{ github.event_name == 'push' }}

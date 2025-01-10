@@ -12,6 +12,7 @@ on:
     branches:
         - main
     paths:
+        - ".github/workflows/build-test-infra.yml"
         - "terraform/**"
         - "ci/infra/terraform/production/infra.tfvars"
         - "ci/infra/terraform/non-production/infra.tfvars"
@@ -19,6 +20,7 @@ on:
     branches:
         - main
     paths:
+        - ".github/workflows/build-test-infra.yml"
         - "terraform/**"
         - "ci/infra/terraform/production/infra.tfvars"
         - "ci/infra/terraform/non-production/infra.tfvars"

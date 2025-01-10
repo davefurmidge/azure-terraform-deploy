@@ -133,7 +133,7 @@ jobs:
         with:
             auto_approve: true
             path: ${{ env.TERRAFORM_BASE_PATH }}
-            var_file: ${{ env.VAR_BASE_PATH }}/vars/non-production/infra.tfvars
+            var_file: ${{ env.VAR_BASE_PATH }}/non-production/infra.tfvars
             # backend_config: use_oidc=true,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
             backend_config: use_oidc=false,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
 

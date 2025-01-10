@@ -1,0 +1,173 @@
+name: build-dummy-infra
+
+env:
+  GITHUB_TOKEN: ${{ secrets.SAML_GITHUB_TOKEN }}
+  TERRAFORM_BASE_PATH: 'terraform'
+  VAR_BASE_PATH: 'ci/infra/terraform'
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+        - main
+    paths:
+        - "terraform/**"
+        - "ci/infra/terraform/production/infra.tfvars"
+        - "ci/infra/terraform/non-production/infra.tfvars"
+  pull_request:
+    branches:
+        - main
+    paths:
+        - "terraform/**"
+        - "ci/infra/terraform/production/infra.tfvars"
+        - "ci/infra/terraform/non-production/infra.tfvars"
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Validate terraform configuration
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: terraform fmt
+        uses: dflook/terraform-fmt-check@v1.45.0
+        with:
+          path: ${{ env.TERRAFORM_BASE_PATH }}
+
+      - name: terraform validate
+        uses: dflook/terraform-validate@v1.45.0
+        env:
+            TERRAFORM_HTTP_CREDENTIALS: github.com/davefurmidge=foo:${{ secrets.SAML_GITHUB_TOKEN }}
+        with:
+          path: ${{ env.TERRAFORM_BASE_PATH }}
+       
+  plan-dev:
+    if: ${{ github.event_name == 'pull_request' }}
+    needs: ["lint"]
+    runs-on: ubuntu-latest
+    name: Plan Dev
+    environment:
+      name: dev
+    env:
+        GITHUB_TOKEN: ${{ secrets.SAML_GITHUB_TOKEN }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+        ARM_CLIENT_ID: ${{ secrets.SP_CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.SP_PASSWORD }}
+        ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+  
+      - name: terraform plan
+        uses: dflook/terraform-plan@v1.45.0
+        env:
+          TERRAFORM_HTTP_CREDENTIALS: github.com/davefurmidge=foo:${{ secrets.SAML_GITHUB_TOKEN }}
+        with:
+          add_github_comment: changes-only
+          path: ${{ env.TERRAFORM_BASE_PATH }}
+          variables: |
+            environment_name = "dev"
+          var_file: ${{ env.VAR_BASE_PATH }}/vars/non-production/infra.tfvars
+        #   backend_config: use_oidc=true,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
+          backend_config: use_oidc=false,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
+
+  # plan-prod:
+  #   if: ${{ github.event_name == 'pull_request' }}
+  #   needs: ["lint","plan-dev"]
+  #   runs-on: ubuntu-latest
+  #   name: Plan Prod
+  #   environment:
+  #       name: prod
+  #   env:
+  #       GITHUB_TOKEN: ${{ secrets.SAML_GITHUB_TOKEN }}
+  #       ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+  #       ARM_CLIENT_ID: ${{ secrets.SP_CLIENT_ID }}
+  #       ARM_CLIENT_SECRET: ${{ secrets.SP_PASSWORD }}
+  #       ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+
+  #     - name: terraform plan
+  #       uses: dflook/terraform-plan@v1.45.0
+  #       env:
+  #           TERRAFORM_HTTP_CREDENTIALS: github.com/davefurmidge=foo:${{ secrets.SAML_GITHUB_TOKEN }}
+  #       with:
+  #           add_github_comment: changes-only
+  #           path: ${{ env.TERRAFORM_BASE_PATH }}
+  #           variables: |
+  #               environment_name = "prod"
+  #           var_file: ${{ env.VAR_BASE_PATH }}/vars/production/infra.tfvars
+  #           backend_config: use_oidc=false,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
+  #           # backend_config: use_oidc=true,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}  
+
+  # apply-dev:
+  #   if: ${{ github.event_name == 'push' }}
+  #   needs: ["lint"]
+  #   runs-on: ubuntu-latest
+  #   name: Apply Dev
+  #   environment:
+  #       name: dev
+  #   env:
+  #       GITHUB_TOKEN: ${{ secrets.SAML_GITHUB_TOKEN }}
+  #       ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+  #       ARM_CLIENT_ID: ${{ secrets.SP_CLIENT_ID }}
+  #       ARM_CLIENT_SECRET: ${{ secrets.SP_PASSWORD }}
+  #       ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+ 
+  #     - name: terraform apply
+  #       uses: dflook/terraform-apply@v1.45.0
+  #       env:
+  #           TERRAFORM_HTTP_CREDENTIALS: github.com/davefurmidge=foo:${{ secrets.SAML_GITHUB_TOKEN }}
+  #       with:
+  #           auto_approve: true
+  #           path: ${{ env.TERRAFORM_BASE_PATH }}
+  #           variables: |
+  #               environment_name = "dev"
+  #           var_file: ${{ env.VAR_BASE_PATH }}/vars/non-production/infra.tfvars
+  #           # backend_config: use_oidc=true,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
+  #           backend_config: use_oidc=false,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
+
+  # apply-prod:
+  #   if: ${{ github.event_name == 'push' }}
+  #   needs: ["lint","apply-dev"]
+  #   runs-on: ubuntu-latest
+  #   name: Apply Prod
+  #   environment:
+  #       name: prod
+  #   env:
+  #       GITHUB_TOKEN: ${{ secrets.SAML_GITHUB_TOKEN }}
+  #       ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+  #       ARM_CLIENT_ID: ${{ secrets.SP_CLIENT_ID }}
+  #       ARM_CLIENT_SECRET: ${{ secrets.SP_PASSWORD }}
+  #       ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  
+  #     - name: terraform apply
+  #       uses: dflook/terraform-apply@v1.45.0
+  #       env:
+  #           TERRAFORM_HTTP_CREDENTIALS: github.com/davefurmidge=foo:${{ secrets.SAML_GITHUB_TOKEN }}
+  #       with:
+  #           auto_approve: true
+  #           path: ${{ env.TERRAFORM_BASE_PATH }}
+  #           variables: |
+  #               environment_name = "prod"
+  #           var_file: ${{ env.VAR_BASE_PATH }}/vars/production/infra.tfvars
+  #           # backend_config: use_oidc=true,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}     
+  #           backend_config: use_oidc=false,key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}     
+            
+  

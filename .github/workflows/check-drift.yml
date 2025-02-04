@@ -1,0 +1,42 @@
+name: Check Terraform Drift
+
+env:
+  GITHUB_TOKEN: ${{ secrets.SAML_GITHUB_TOKEN }}
+  TERRAFORM_BASE_PATH: 'terraform'
+  VAR_BASE_PATH: 'ci/infra/terraform'
+
+on:
+  workflow_dispatch:
+  
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  check_drift:
+    runs-on: ubuntu-latest
+    name: Check for drift of Terraform configuration
+    environment:
+      name: dev
+    env:
+        GITHUB_TOKEN: ${{ secrets.SAML_GITHUB_TOKEN }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+        ARM_CLIENT_ID: ${{ secrets.SP_CLIENT_ID }}
+        ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+        ARM_USE_OIDC: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check
+        uses: dflook/terraform-check@v1
+        id: check
+        with:
+          path: ${{ env.TERRAFORM_BASE_PATH }}
+          var_file: ${{ env.VAR_BASE_PATH }}/non-production/infra.tfvars
+          backend_config: use_oidc=true,key=dev-terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
+
+      - name: Changes detected
+        if: ${{ failure() && steps.check.outputs.failure-reason == 'changes-to-apply' }}
+        run: echo "There are outstanding changes to apply"

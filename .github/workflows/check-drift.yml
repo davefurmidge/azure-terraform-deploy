@@ -35,7 +35,7 @@ jobs:
         with:
           path: ${{ env.TERRAFORM_BASE_PATH }}
           var_file: ${{ env.VAR_BASE_PATH }}/non-production/infra.tfvars
-          backend_config: key=dev-terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
+          backend_config: key=terraform.tfstate,${{ secrets.BACKEND_CONFIG }}
 
       - name: Changes detected
         if: ${{ failure() && steps.check.outputs.failure-reason == 'changes-to-apply' }}
